@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kumpulan Cerpen Kelas 6A - SD Negeri Sapuro 05</title>
+<style>
+  /* ====== UBAH BAGIAN INI SAJA ====== */
+  /* Judul ada di <title> di atas dan di #judul di bawah. */
+  /* Jumlah halaman, folder, dan ekstensi diatur di bagian <script>. */
+
+  :root {
+    --bg: #1f2a37;
+    --panel: #2b3a4c;
+    --text: #f1f5f9;
+    --accent: #f5b942;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    padding: 10px 16px;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+  }
+  header small { display: block; font-size: 12px; font-weight: 400; opacity: .75; margin-top: 2px; }
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+  #buku { box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+  .page { background: #fff; overflow: hidden; }
+  .page img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 12px 14px;
+  }
+  button {
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 15px;
+    cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #info { min-width: 90px; text-align: center; font-variant-numeric: tabular-nums; }
+  #pesan { padding: 24px; text-align: center; max-width: 420px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<header id="judul">Kumpulan Cerpen Kelas 6A<small>SD Negeri Sapuro 05</small></header>
+
+<main id="area">
+  <div id="buku"></div>
+</main>
+
+<footer>
+  <button id="awal" aria-label="Halaman pertama">&#171;</button>
+  <button id="mundur" aria-label="Halaman sebelumnya">Sebelumnya</button>
+  <span id="info">1 / 1</span>
+  <button id="maju" aria-label="Halaman berikutnya">Berikutnya</button>
+  <button id="layar" aria-label="Layar penuh">Layar penuh</button>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.js"></script>
+<script>
+  // ====== PENGATURAN ======
+  const JUMLAH_HALAMAN = 23;      // jumlah file JPEG
+  const FOLDER = "halaman/";      // nama folder gambar
+  const EKSTENSI = ".jpg";        // .jpg atau .jpeg (huruf kecil semua)
+  // Nama file harus: 1.jpg, 2.jpg, 3.jpg, ... (bukan 01.jpg)
+  // ========================
+
+  const area = document.getElementById("area");
+  const bukuEl = document.getElementById("buku");
+  const info = document.getElementById("info");
+  let flip = null;
+  let rasio = null; // lebar / tinggi halaman, dibaca dari gambar pertama
+
+  function daftarGambar() {
+    const out = [];
+    for (let i = 1; i <= JUMLAH_HALAMAN; i++) out.push(FOLDER + i + EKSTENSI);
+    return out;
+  }
+
+  function muatRasio() {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth / img.naturalHeight);
+      img.onerror = () => reject(new Error("Gambar pertama tidak ditemukan: " + FOLDER + "1" + EKSTENSI));
+      img.src = FOLDER + "1" + EKSTENSI;
+    });
+  }
+
+  function bangun() {
+    if (flip) { try { flip.destroy(); } catch (e) {} flip = null; }
+    // StPageFlip menghapus elemen saat destroy, jadi buat ulang wadahnya
+    let wadah = document.getElementById("buku");
+    if (!wadah) {
+      wadah = document.createElement("div");
+      wadah.id = "buku";
+      area.appendChild(wadah);
+    }
+    wadah.innerHTML = "";
+
+    const potret = window.innerWidth < 700; // HP: satu halaman per layar
+    const tersediaW = area.clientWidth - 24;
+    const tersediaH = area.clientHeight - 16;
+
+    let tinggi = Math.min(tersediaH, (potret ? tersediaW : tersediaW / 2) / rasio);
+    let lebar = tinggi * rasio;
+    tinggi = Math.floor(tinggi);
+    lebar = Math.floor(lebar);
+
+    wadah.style.width = (potret ? lebar : lebar * 2) + "px";
+    wadah.style.height = tinggi + "px";
+
+    daftarGambar().forEach((src, i, arr) => {
+      const d = document.createElement("div");
+      d.className = "page";
+      if (i === 0 || (arr.length % 2 === 0 && i === arr.length - 1)) d.setAttribute("data-density", "hard");
+      const img = document.createElement("img");
+      img.src = src;
+      img.alt = "Halaman " + (i + 1);
+      img.draggable = false;
+      d.appendChild(img);
+      wadah.appendChild(d);
+    });
+
+    flip = new St.PageFlip(wadah, {
+      width: lebar,
+      height: tinggi,
+      size: "fixed",
+      showCover: true,
+      usePortrait: true,
+      mobileScrollSupport: false,
+      maxShadowOpacity: 0.4,
+      flippingTime: 700
+    });
+    flip.loadFromHTML(wadah.querySelectorAll(".page"));
+    flip.on("flip", perbaruiInfo);
+    perbaruiInfo();
+  }
+
+  function perbaruiInfo() {
+    const p = flip.getCurrentPageIndex() + 1;
+    info.textContent = p + " / " + JUMLAH_HALAMAN;
+  }
+
+  document.getElementById("awal").onclick = () => flip && flip.flip(0);
+  document.getElementById("mundur").onclick = () => flip && flip.flipPrev();
+  document.getElementById("maju").onclick = () => flip && flip.flipNext();
+  document.getElementById("layar").onclick = () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  };
+  document.addEventListener("keydown", (e) => {
+    if (!flip) return;
+    if (e.key === "ArrowLeft") flip.flipPrev();
+    if (e.key === "ArrowRight") flip.flipNext();
+  });
+
+  let timer;
+  window.addEventListener("resize", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (!rasio) return;
+      const halaman = flip ? flip.getCurrentPageIndex() : 0;
+      bangun();
+      if (halaman > 0) flip.turnToPage(halaman);
+    }, 300);
+  });
+
+  muatRasio()
+    .then((r) => { rasio = r; bangun(); })
+    .catch((err) => {
+      area.innerHTML = '<div id="pesan"><strong>Flipbook belum bisa dibuka.</strong><br>' +
+        err.message +
+        '<br><br>Periksa nama folder, nama file (1.jpg, 2.jpg, ...), dan ekstensinya.</div>';
+    });
+</script>
+</body>
+</html>
